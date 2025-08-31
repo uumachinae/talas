@@ -16,13 +16,17 @@
 ///   File: main_opt.hpp
 ///
 /// Author: $author$
-///   Date: 2/14/2021
+///   Date: 2/14/2021, 8/12/2021
 ///////////////////////////////////////////////////////////////////////
 #ifndef TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPT_HPP
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPT_HPP
 
 #include "talas/app/console/main.hpp"
 #include "talas/network/os/sockets.hpp"
+
+#if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_ANY)
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_ANY "*"
+#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_ANY)
 
 #if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST)
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST "localhost"
@@ -34,10 +38,37 @@
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
+
+#if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_HOST)
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_HOST \
+    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_ANY
+#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_HOST)
+
+#if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_PORT)
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_PORT \
+    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT \
+    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT
+#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_PORT)
+
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+#if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_HOST)
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_HOST \
+    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST
+#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_HOST)
+
+#if !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_PORT)
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_PORT \
+    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT 
+#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_PORT)
+
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPT "host"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG_REQUIRED MAIN_OPT_ARGUMENT_OPTIONAL
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG_RESULT 0
-#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG "<string>"
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG "[{ name | ddd.ddd.ddd.ddd }]"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTUSE "Host name or address"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTVAL_S "o::"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTVAL_C 'o'
@@ -50,7 +81,7 @@
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPT "port"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG_REQUIRED MAIN_OPT_ARGUMENT_OPTIONAL
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG_RESULT 0
-#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG "<number>"
+#define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG "[{ 0..2^16-1 }]"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTUSE "Port number"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_S "p::"
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_C 'p'
@@ -60,6 +91,9 @@
     TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG_RESULT, \
     TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_C}, \
 
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPTIONS_CHARS_EXTEND \
    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTVAL_S \
    TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_S \
@@ -67,6 +101,9 @@
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPTIONS_OPTIONS_EXTEND \
     TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTION \
     TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTION \
+
+///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 
 #define TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPTIONS_CHARS \
     TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_OPTIONS_CHARS_EXTEND \
@@ -104,8 +141,15 @@ public:
     /// constructor / destructor
     ///////////////////////////////////////////////////////////////////////
     main_optt(): run_(0), 
+        host_any_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_ANY), 
         host_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST), 
-        port_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT) {
+        port_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT),
+        accept_host_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_HOST), 
+        accept_port_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_ACCEPT_PORT),
+        relay_host_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_HOST), 
+        relay_port_(TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_RELAY_PORT),
+        accept_one_(false), keep_accept_(false), 
+        restart_(false), stop_(false) {
     }
     virtual ~main_optt() {
     }
@@ -168,6 +212,25 @@ protected:
         run_ = &Derives::all_sockets_run;
         return err;
     }
+    virtual int before_set_sockets_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int after_set_sockets_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int all_set_sockets_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if (!(err = before_set_sockets_run(argc, argv, env))) {
+            int err2 = 0;
+            err = set_sockets_run(argc, argv, env);
+            if ((err2 = after_set_sockets_run(argc, argv, env))) {
+                if (!(err)) err = err2;
+            }
+        }
+        return err;
+    }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -207,10 +270,81 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+    virtual int get_accept_host_run(int argc, char_t** argv, char_t** env) {
+        const string_t& accept_host = this->accept_host();
+        const char_t* chars = 0;
+        size_t length = 0;
+        int err = 0;
+        if ((chars = accept_host.has_chars(length))) {
+            this->outln(chars, length);
+        }
+        return err;
+    }
+    virtual int set_get_accept_host_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_accept_host_run;
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int get_accept_port_run(int argc, char_t** argv, char_t** env) {
+        const string_t& accept_port = this->accept_port();
+        const char_t* chars = 0;
+        size_t length = 0;
+        int err = 0;
+        if ((chars = accept_port.has_chars(length))) {
+            this->outln(chars, length);
+        }
+        return err;
+    }
+    virtual int set_get_accept_port_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_accept_port_run;
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int get_relay_host_run(int argc, char_t** argv, char_t** env) {
+        const string_t& relay_host = this->relay_host();
+        const char_t* chars = 0;
+        size_t length = 0;
+        int err = 0;
+        if ((chars = relay_host.has_chars(length))) {
+            this->outln(chars, length);
+        }
+        return err;
+    }
+    virtual int set_get_relay_host_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_relay_host_run;
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int get_relay_port_run(int argc, char_t** argv, char_t** env) {
+        const string_t& relay_port = this->relay_port();
+        const char_t* chars = 0;
+        size_t length = 0;
+        int err = 0;
+        if ((chars = relay_port.has_chars(length))) {
+            this->outln(chars, length);
+        }
+        return err;
+    }
+    virtual int set_get_relay_port_run(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_relay_port_run;
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
     virtual int on_set_host_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         if ((optarg) && (optarg[0])) {
             this->set_host(optarg);
@@ -219,17 +353,15 @@ protected:
         return err;
     }
     virtual int on_get_host_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         err = this->on_get_host(argc, argv, env);
         return err;
     }
     virtual int on_host_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         if ((optarg) && (optarg[0])) {
             err = on_set_host_option(optval, optarg, optname, optind, argc, argv, env);
@@ -238,13 +370,17 @@ protected:
         }
         return err;
     }
+    virtual const char_t* host_option_usage(const char_t*& optarg, const struct option* longopt) {
+        const char_t* chars = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTUSE;
+        optarg = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG;
+        return chars;
+    }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
     virtual int on_set_port_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         if ((optarg) && (optarg[0])) {
             this->set_port(optarg);
@@ -253,17 +389,15 @@ protected:
         return err;
     }
     virtual int on_get_port_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         err = this->on_get_port(argc, argv, env);
         return err;
     }
     virtual int on_port_option
-    (int optval, const char* optarg,
-     const char* optname, int optind,
-     int argc, char_t** argv, char_t** env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         if ((optarg) && (optarg[0])) {
             err = on_set_port_option(optval, optarg, optname, optind, argc, argv, env);
@@ -272,42 +406,164 @@ protected:
         }
         return err;
     }
+    virtual const char_t* port_option_usage(const char_t*& optarg, const struct option* longopt) {
+        const char_t* chars = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTUSE;
+        optarg = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG;
+        return chars;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int on_set_accept_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            this->set_accept_host(optarg);
+            err = this->on_set_accept_host(argc, argv, env);
+        }
+        return err;
+    }
+    virtual int on_get_accept_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        err = this->on_get_accept_host(argc, argv, env);
+        return err;
+    }
+    virtual int on_accept_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            err = on_set_accept_host_option(optval, optarg, optname, optind, argc, argv, env);
+        } else {
+            err = on_get_accept_host_option(optval, optarg, optname, optind, argc, argv, env);
+        }
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int on_set_accept_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            this->set_accept_port(optarg);
+            err = this->on_set_accept_port(argc, argv, env);
+        }
+        return err;
+    }
+    virtual int on_get_accept_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        err = this->on_get_accept_port(argc, argv, env);
+        return err;
+    }
+    virtual int on_accept_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            err = on_set_accept_port_option(optval, optarg, optname, optind, argc, argv, env);
+        } else {
+            err = on_get_accept_port_option(optval, optarg, optname, optind, argc, argv, env);
+        }
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int on_set_relay_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            this->set_relay_host(optarg);
+            err = this->on_set_relay_host(argc, argv, env);
+        }
+        return err;
+    }
+    virtual int on_get_relay_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        err = this->on_get_relay_host(argc, argv, env);
+        return err;
+    }
+    virtual int on_relay_host_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            err = on_set_relay_host_option(optval, optarg, optname, optind, argc, argv, env);
+        } else {
+            err = on_get_relay_host_option(optval, optarg, optname, optind, argc, argv, env);
+        }
+        return err;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    virtual int on_set_relay_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            this->set_relay_port(optarg);
+            err = this->on_set_relay_port(argc, argv, env);
+        }
+        return err;
+    }
+    virtual int on_get_relay_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        err = this->on_get_relay_port(argc, argv, env);
+        return err;
+    }
+    virtual int on_relay_port_option
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        if ((optarg) && (optarg[0])) {
+            err = on_set_relay_port_option(optval, optarg, optname, optind, argc, argv, env);
+        } else {
+            err = on_get_relay_port_option(optval, optarg, optname, optind, argc, argv, env);
+        }
+        return err;
+    }
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
     virtual int on_option
-    (int optval, const char_t* optarg,
-     const char_t* optname, int optind,
-     int argc, char_t**argv, char_t**env) {
+    (int optval, const char_t* optarg, const char_t* optname, 
+     int optind, int argc, char_t** argv, char_t** env) {
         int err = 0;
         switch(optval) {
         case TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTVAL_C:
-            err = on_host_option
-            (optval, optarg, optname, optind, argc, argv, env);
+            err = on_host_option(optval, optarg, optname, optind, argc, argv, env);
             break;
         case TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_C:
-            err = on_port_option
-            (optval, optarg, optname, optind, argc, argv, env);
+            err = on_port_option(optval, optarg, optname, optind, argc, argv, env);
             break;
         default:
-            err = Extends::on_option
-            (optval, optarg, optname, optind, argc, argv, env);
+            err = Extends::on_option(optval, optarg, optname, optind, argc, argv, env);
         }
         return err;
     }
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    virtual const char_t* option_usage
-    (const char_t*& optarg, const struct option* longopt) {
+    virtual const char_t* option_usage(const char_t*& optarg, const struct option* longopt) {
         const char_t* chars = "";
         switch(longopt->val) {
         case TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTVAL_C:
-            optarg = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTARG;
-            chars = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_HOST_OPTUSE;
+            chars = host_option_usage(optarg, longopt);
             break;
         case TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTVAL_C:
-            optarg = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTARG;
-            chars = TALAS_APP_CONSOLE_NETWORK_BASE_MAIN_PORT_OPTUSE;
+            chars = port_option_usage(optarg, longopt);
             break;
         default:
             chars = Extends::option_usage(optarg, longopt);
@@ -328,6 +584,21 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+    string_t host_any_;
+    virtual const string_t set_host_any(const char_t* to) {
+        string_t& host_any = this->host_any();
+        if ((to) && (to[0])) {
+            host_any.assign(to);
+        }
+        return host_any;
+    }
+    virtual string_t& host_any() const {
+        return (string_t&)host_any_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    string_t host_;
     virtual int on_set_host(int argc, char_t** argv, char_t** env) {
         int err = 0;
         return err;
@@ -350,6 +621,7 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+    string_t port_;
     virtual int on_set_port(int argc, char_t** argv, char_t** env) {
         int err = 0;
         return err;
@@ -372,8 +644,147 @@ protected:
 
     ///////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+    string_t accept_host_;
+    virtual int on_set_accept_host(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int on_get_accept_host(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_accept_host_run;
+        return err;
+    }
+    virtual const string_t set_accept_host(const char_t* to) {
+        string_t& accept_host = this->accept_host();
+        if ((to) && (to[0])) {
+            accept_host.assign(to);
+        }
+        return accept_host;
+    }
+    virtual string_t& accept_host() const {
+        return (string_t&)accept_host_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    string_t accept_port_;
+    virtual int on_set_accept_port(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int on_get_accept_port(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_accept_port_run;
+        return err;
+    }
+    virtual const string_t set_accept_port(const char_t* to) {
+        string_t& accept_port = this->accept_port();
+        if ((to) && (to[0])) {
+            accept_port.assign(to);
+        }
+        return accept_port;
+    }
+    virtual string_t& accept_port() const {
+        return (string_t&)accept_port_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    string_t relay_host_;
+    virtual int on_set_relay_host(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int on_get_relay_host(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_relay_host_run;
+        return err;
+    }
+    virtual const string_t set_relay_host(const char_t* to) {
+        string_t& relay_host = this->relay_host();
+        if ((to) && (to[0])) {
+            relay_host.assign(to);
+        }
+        return relay_host;
+    }
+    virtual string_t& relay_host() const {
+        return (string_t&)relay_host_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    string_t relay_port_;
+    virtual int on_set_relay_port(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        return err;
+    }
+    virtual int on_get_relay_port(int argc, char_t** argv, char_t** env) {
+        int err = 0;
+        run_ = &Derives::get_relay_port_run;
+        return err;
+    }
+    virtual const string_t set_relay_port(const char_t* to) {
+        string_t& relay_port = this->relay_port();
+        if ((to) && (to[0])) {
+            relay_port.assign(to);
+        }
+        return relay_port;
+    }
+    virtual string_t& relay_port() const {
+        return (string_t&)relay_port_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    bool accept_one_;
+    virtual bool& set_accept_one(bool to = true) {
+        bool& accept_one = this->accept_one();
+        accept_one = to;
+        return accept_one;
+    }
+    virtual bool& accept_one() const {
+        return (bool&)accept_one_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    bool keep_accept_;
+    virtual bool& set_keep_accept(bool to = true) {
+        bool& keep_accept = this->keep_accept();
+        keep_accept = to;
+        return keep_accept;
+    }
+    virtual bool& keep_accept() const {
+        return (bool&)keep_accept_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    bool restart_;
+    virtual bool& set_restart(bool to = true) {
+        bool& restart = this->restart();
+        restart = to;
+        return restart;
+    }
+    virtual bool& restart() const {
+        return (bool&)restart_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    bool stop_;
+    virtual bool& set_stop(bool to = true) {
+        bool& stop = this->stop();
+        stop = to;
+        return stop;
+    }
+    virtual bool& stop() const {
+        return (bool&)stop_;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 protected:
-    string_t host_, port_;
 }; /// class main_optt
 typedef main_optt<> main_opt;
 

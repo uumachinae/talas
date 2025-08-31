@@ -16,9 +16,10 @@
 ///   File: main_opt.cpp
 ///
 /// Author: $author$
-///   Date: 8/14/2021
+///   Date: 8/14/2021, 8/31/2025
 ///////////////////////////////////////////////////////////////////////
 #include "talas/app/console/network/protocol/crlf/server/main_opt.hpp"
+#include "nadir/xos/base/getopt/main_opt.cpp"
 
 #if !defined(TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_OPT_INSTANCE)
 ///#define TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_OPT_INSTANCE

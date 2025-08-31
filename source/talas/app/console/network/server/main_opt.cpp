@@ -13,34 +13,28 @@
 /// or otherwise) arising in any way out of the use of this software, 
 /// even if advised of the possibility of such damage.
 ///
-///   File: main.cpp
+///   File: main_opt.cpp
 ///
 /// Author: $author$
-///   Date: 8/14/2021, 8/31/2025
+///   Date: 8/12/2021
 ///////////////////////////////////////////////////////////////////////
-#include "talas/app/console/network/protocol/crlf/server/main.hpp"
-
-#if !defined(TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_INSTANCE)
-#define TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_INSTANCE
-#endif /// !defined(TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_NSTANCE)
+#include "talas/app/console/network/server/main_opt.hpp"
 
 namespace talas {
 namespace app {
 namespace console {
 namespace network {
-namespace protocol {
-namespace crlf {
 namespace server {
 
-/// class main
-#if defined(TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_INSTANCE)
-static main the_main;
-#endif /// defined(TALAS_APP_CONSOLE_NETWORK_PROTOCOL_CRLF_SERVER_MAIN_INSTANCE)
+///////////////////////////////////////////////////////////////////////
+/// class main_optt
+///////////////////////////////////////////////////////////////////////
+#if defined(TALAS_APP_CONSOLE_NETWORK_SERVER_MAIN_OPT_INSTANCE)
+static main_opt the_main_opt;
+#endif /// defined(TALAS_APP_CONSOLE_NETWORK_SERVER_MAIN_OPT_INSTANCE) 
 
-} /// namespace server
-} /// namespace crlf
-} /// namespace protocol
-} /// namespace network
-} /// namespace console
-} /// namespace app
-} /// namespace talas
+} /// namespace server 
+} /// namespace network 
+} /// namespace console 
+} /// namespace app 
+} /// namespace talas 
