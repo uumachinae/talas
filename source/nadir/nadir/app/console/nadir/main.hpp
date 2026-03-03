@@ -79,6 +79,7 @@ protected:
         const lib::version& version = lib::nadir::version::which();
         this->outl(version.name(), " version = ", version.to_string().chars(), NULL);
         this->outln();
+        this->usage(argc, argv, env);
         return err;
     }
     virtual int thread_run(int argc, char_t** argv, char_t** env) {
